@@ -1,4 +1,4 @@
-# Ofelia - a job scheduler [![GitHub version](https://badge.fury.io/gh/mcuadros%2Fofelia.svg)](https://github.com/mcuadros/ofelia/releases) ![Test](https://github.com/mcuadros/ofelia/workflows/Test/badge.svg)
+# Ofelia - a job scheduler [![GitHub version](https://img.shields.io/github/v/release/mcuadros/ofelia?&sort=semver&display_name=release&label=stable&color=green)](https://github.com/mcuadros/ofelia/releases) [![GitHub version](https://img.shields.io/github/v/release/mcuadros/ofelia?include_prereleases&sort=semver&display_name=release&label=edge)](https://github.com/mcuadros/ofelia/releases) ![Test](https://github.com/mcuadros/ofelia/workflows/Test/badge.svg)
 
 <img src="https://weirdspace.dk/FranciscoIbanez/Graphics/Ofelia.gif" align="right" width="180px" height="300px" vspace="20" />
 
