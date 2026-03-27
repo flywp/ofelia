@@ -57,7 +57,7 @@ func (j *RunJob) Run(ctx *Context) error {
 			// try pulling image first
 			if pull {
 				if pullError = j.pullImage(); pullError == nil {
-					ctx.Log("Pulled image " + j.Image)
+					ctx.Logger.Debug("Pulled new image", "image", j.Image, "pull", pull)
 					return nil
 				}
 			}
@@ -66,14 +66,14 @@ func (j *RunJob) Run(ctx *Context) error {
 			// try to find image locally first
 			searchErr := j.searchLocalImage()
 			if searchErr == nil {
-				ctx.Log("Found locally image " + j.Image)
+				ctx.Logger.Debug("Found image locally", "image", j.Image, "pull", pull)
 				return nil
 			}
 
 			// if couldn't find image locally, still try to pull
 			if !pull && searchErr == ErrLocalImageNotFound {
 				if pullError = j.pullImage(); pullError == nil {
-					ctx.Log("Pulled image " + j.Image)
+					ctx.Logger.Debug("Pulled new image", "image", j.Image, "pull", pull)
 					return nil
 				}
 			}

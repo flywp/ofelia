@@ -150,7 +150,7 @@ func (c *Config) dockerLabelsUpdate(labels map[string]map[string]string) {
 				newJob.Client = c.dockerHandler.GetInternalDockerClient()
 				newJob.Name = newJobsName
 				if newJob.Hash() != j.Hash() {
-					c.logger.Debugf("Job %s has changed, restarting", name)
+					c.logger.Debug("Job has changed, restarting", "job", name)
 					// Remove from the scheduler
 					c.sh.RemoveJob(j)
 					// Add the job back to the scheduler
@@ -163,7 +163,7 @@ func (c *Config) dockerLabelsUpdate(labels map[string]map[string]string) {
 			}
 		}
 		if !found {
-			c.logger.Debugf("Job %s is not found, Removing", name)
+			c.logger.Debug("Job not found, Removing", "job", name)
 			// Remove the job
 			c.sh.RemoveJob(j)
 			delete(c.ExecJobs, name)

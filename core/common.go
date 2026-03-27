@@ -24,7 +24,6 @@ var (
 const (
 	// maximum size of a stdout/stderr stream to be kept in memory and optional stored/sent via mail
 	maxStreamSize = 10 * 1024 * 1024
-	logPrefix     = "[Job %q (%s)] %s"
 )
 
 type Job interface {
@@ -115,22 +114,22 @@ func (c *Context) Stop(err error) {
 	c.Job.NotifyStop()
 }
 
-func (c *Context) Log(msg string) {
-	args := []interface{}{c.Job.GetName(), c.Execution.ID, msg}
+func (c *Context) Log(msg string, args ...any) {
+	defaultArgs := []any{"job", c.Job.GetName(), "execution", c.Execution.ID}
 
 	switch {
 	case c.Execution.Failed:
-		c.Logger.Errorf(logPrefix, args...)
+		c.Logger.Error(msg, append(defaultArgs, args...)...)
 	case c.Execution.Skipped:
-		c.Logger.Warningf(logPrefix, args...)
+		c.Logger.Warning(msg, append(defaultArgs, args...)...)
 	default:
-		c.Logger.Noticef(logPrefix, args...)
+		c.Logger.Info(msg, append(defaultArgs, args...)...)
 	}
 }
 
-func (c *Context) Warn(msg string) {
-	args := []interface{}{c.Job.GetName(), c.Execution.ID, msg}
-	c.Logger.Warningf(logPrefix, args...)
+func (c *Context) Warn(msg string, args ...any) {
+	defaultArgs := []any{"job", c.Job.GetName(), "execution", c.Execution.ID}
+	c.Logger.Warning(msg, append(defaultArgs, args...)...)
 }
 
 // Execution contains all the information relative to a Job execution.
@@ -225,11 +224,10 @@ func (c *middlewareContainer) Middlewares() []Middleware {
 }
 
 type Logger interface {
-	Criticalf(format string, args ...interface{})
-	Debugf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Noticef(format string, args ...interface{})
-	Warningf(format string, args ...interface{})
+	Debug(str string, args ...any)
+	Error(str string, args ...any)
+	Info(str string, args ...any)
+	Warning(str string, args ...any)
 }
 
 func randomID() string {
@@ -244,7 +242,7 @@ func randomID() string {
 func buildFindLocalImageOptions(image string) docker.ListImagesOptions {
 	return docker.ListImagesOptions{
 		Filters: map[string][]string{
-			"reference": []string{image},
+			"reference": {image},
 		},
 	}
 }

@@ -19,11 +19,10 @@ var _ = Suite(&SuiteConfig{})
 
 type TestLogger struct{}
 
-func (*TestLogger) Criticalf(format string, args ...interface{}) {}
-func (*TestLogger) Debugf(format string, args ...interface{})    {}
-func (*TestLogger) Errorf(format string, args ...interface{})    {}
-func (*TestLogger) Noticef(format string, args ...interface{})   {}
-func (*TestLogger) Warningf(format string, args ...interface{})  {}
+func (*TestLogger) Debug(format string, args ...interface{})   {}
+func (*TestLogger) Error(format string, args ...interface{})   {}
+func (*TestLogger) Info(format string, args ...interface{})    {}
+func (*TestLogger) Warning(format string, args ...interface{}) {}
 
 func (s *SuiteConfig) TestBuildFromString(c *C) {
 	conf, err := BuildFromString(`

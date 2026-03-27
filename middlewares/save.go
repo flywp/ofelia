@@ -44,7 +44,7 @@ func (m *Save) Run(ctx *core.Context) error {
 	if ctx.Execution.Failed || !m.SaveOnlyOnError {
 		err := m.saveToDisk(ctx)
 		if err != nil {
-			ctx.Logger.Errorf("Save error: %q", err)
+			ctx.Logger.Error("Save error", "error", err)
 		}
 	}
 

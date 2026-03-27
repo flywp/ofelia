@@ -2,7 +2,6 @@ package core
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/robfig/cron/v3"
@@ -45,18 +44,18 @@ func (s *Scheduler) AddJob(j Job) error {
 
 	id, err := s.cron.AddJob(j.GetSchedule(), &jobWrapper{s, j})
 	if err != nil {
-		s.Logger.Warningf("Failed to register job %q - %q - %q. Error: %s", j.GetName(), j.GetCommand(), j.GetSchedule(), err)
+		s.Logger.Warning("Failed to register job.", "job", j.GetName(), "command", j.GetCommand(), "schedule", j.GetSchedule(), "error", err)
 		return err
 	}
 
 	j.SetCronJobID(int(id))
 	j.Use(s.Middlewares()...)
-	s.Logger.Noticef("New job registered %q - %q - %q - ID: %v", j.GetName(), j.GetCommand(), j.GetSchedule(), id)
+	s.Logger.Info("New job registered", "job", j.GetName(), "command", j.GetCommand(), "schedule", j.GetSchedule(), "id", id)
 	return nil
 }
 
 func (s *Scheduler) RemoveJob(j Job) error {
-	s.Logger.Noticef("Job deregistered (will not fire again) %q - %q - %q - ID: %v", j.GetName(), j.GetCommand(), j.GetSchedule(), j.GetCronJobID())
+	s.Logger.Info("Job deregistered (will not fire again)", "job", j.GetName(), "command", j.GetCommand(), "schedule", j.GetSchedule(), "cron_id", j.GetCronJobID())
 	s.cron.Remove(cron.EntryID(j.GetCronJobID()))
 	return nil
 }
@@ -66,7 +65,7 @@ func (s *Scheduler) CronJobs() []cron.Entry {
 }
 
 func (s *Scheduler) Start() error {
-	s.Logger.Debugf("Starting scheduler with %d jobs", len(s.CronJobs()))
+	s.Logger.Debug("Starting scheduler", "jobs_count", len(s.CronJobs()))
 
 	s.isRunning = true
 	s.cron.Start()
@@ -104,29 +103,26 @@ func (w *jobWrapper) Run() {
 
 func (w *jobWrapper) start(ctx *Context) {
 	ctx.Start()
-	ctx.Log("Started - " + ctx.Job.GetCommand())
+	ctx.Log("Job start", "command", ctx.Job.GetCommand())
 }
 
 func (w *jobWrapper) stop(ctx *Context, err error) {
 	ctx.Stop(err)
 
-	errText := "none"
+	args := []any{}
 	if ctx.Execution.Error != nil {
-		errText = ctx.Execution.Error.Error()
+		args = append(args, "error", ctx.Execution.Error)
 	}
 
 	if ctx.Execution.OutputStream.TotalWritten() > 0 {
-		ctx.Log("StdOut: " + ctx.Execution.OutputStream.String())
+		args = append(args, "stdout", ctx.Execution.OutputStream)
 	}
 
 	if ctx.Execution.ErrorStream.TotalWritten() > 0 {
-		ctx.Log("StdErr: " + ctx.Execution.ErrorStream.String())
+		args = append(args, "stderr", ctx.Execution.ErrorStream)
 	}
 
-	msg := fmt.Sprintf(
-		"Finished in %q, failed: %t, skipped: %t, error: %s",
-		ctx.Execution.Duration, ctx.Execution.Failed, ctx.Execution.Skipped, errText,
-	)
+	args = append(args, "duration", ctx.Execution.Duration, "failed", ctx.Execution.Failed, "skipped", ctx.Execution.Skipped)
 
-	ctx.Log(msg)
+	ctx.Log("Job stop", args...)
 }

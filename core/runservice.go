@@ -42,7 +42,7 @@ func (j *RunServiceJob) Run(ctx *Context) error {
 		return err
 	}
 
-	ctx.Logger.Noticef("Created service %s for job %s\n", svc.ID, j.Name)
+	ctx.Logger.Info("Created new service", "id", svc.ID, "job", j.Name)
 
 	if err := j.watchContainer(ctx, svc.ID); err != nil {
 		return err
@@ -119,7 +119,7 @@ var svcChecker = time.NewTicker(watchDuration)
 func (j *RunServiceJob) watchContainer(ctx *Context, svcID string) error {
 	exitCode := swarmError
 
-	ctx.Logger.Noticef("Checking for service ID %s (%s) termination\n", svcID, j.Name)
+	ctx.Logger.Info("Checking for service termination", "id", svcID, "job", j.Name)
 
 	svc, err := j.Client.InspectService(svcID)
 	if err != nil {
@@ -150,7 +150,7 @@ func (j *RunServiceJob) watchContainer(ctx *Context, svcID string) error {
 
 	wg.Wait()
 
-	ctx.Logger.Noticef("Service ID %s (%s) has completed with exit code %d\n", svcID, j.Name, exitCode)
+	ctx.Logger.Info("Service has completed", "id", svcID, "job", j.Name, "exit_code", exitCode)
 	return err
 }
 
@@ -163,7 +163,7 @@ func (j *RunServiceJob) findtaskstatus(ctx *Context, taskID string) (int, bool) 
 	})
 
 	if err != nil {
-		ctx.Logger.Errorf("Failed to find task ID %s. Considering the task terminated: %s\n", taskID, err.Error())
+		ctx.Logger.Error("Failed to find task ID. Considering the task terminated.", "id", taskID, "error", err)
 		return 0, false
 	}
 
@@ -214,8 +214,8 @@ func (j *RunServiceJob) deleteService(ctx *Context, svcID string) error {
 	})
 
 	if _, is := err.(*docker.NoSuchService); is {
-		ctx.Logger.Warningf("Service %s cannot be removed. An error may have happened, "+
-			"or it might have been removed by another process", svcID)
+		ctx.Logger.Warning("Service cannot be removed. An error may have happened, "+
+			"or it might have been removed by another process", "id", svcID)
 		return nil
 	}
 

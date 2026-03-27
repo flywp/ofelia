@@ -61,9 +61,9 @@ func (m *Slack) pushMessage(ctx *core.Context) {
 
 	r, err := http.PostForm(m.SlackWebhook, values)
 	if err != nil {
-		ctx.Logger.Errorf("Slack error calling %q error: %q", m.SlackWebhook, err)
+		ctx.Logger.Error("Failed to call slack", "webhook", m.SlackWebhook, "error", err)
 	} else if r.StatusCode != 200 {
-		ctx.Logger.Errorf("Slack error non-200 status code calling %q", m.SlackWebhook)
+		ctx.Logger.Error("Slack responded with non-200 status", "webhook", m.SlackWebhook, "status", r.Status)
 	}
 }
 

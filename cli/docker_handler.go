@@ -88,14 +88,14 @@ func (c *DockerHandler) ConfigFromLabelsEnabled() bool {
 
 func (c *DockerHandler) watch() {
 	const pollInterval = 10 * time.Second
-	c.logger.Debugf("Watching for Docker labels changes every %s...", pollInterval)
+	c.logger.Debug("Watching for Docker labels changes...", "interval", pollInterval)
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 	for range ticker.C {
 		labels, err := c.GetDockerLabels()
 		// Do not print or care if there is no container up right now
 		if err != nil && !errors.Is(err, errNoContainersMatchingFilters) {
-			c.logger.Debugf("%v", err)
+			c.logger.Debug("failed to get Docker labels", "error", err)
 		}
 		c.notifier.dockerLabelsUpdate(labels)
 	}
@@ -109,20 +109,20 @@ func (c *DockerHandler) WaitForLabels() {
 
 	// Check if .dockerenv file exists
 	if _, err := os.Stat(dockerEnvFile); os.IsNotExist(err) {
-		c.logger.Debugf(".dockerenv file not found, ofelia is not running in a Docker container")
+		c.logger.Debug(".dockerenv file not found, ofelia is not running in a Docker container")
 		return
 	}
 
 	id, err := getContainerID(mountinfoFilePath)
 	if err != nil {
-		c.logger.Debugf("Failed to extract ofelia's container ID. Trying with container hostname instead...")
+		c.logger.Debug("Failed to extract ofelia's container ID. Trying with container hostname instead...")
 		id, _ = os.Hostname()
 	}
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		_, err := c.dockerClient.InspectContainerWithOptions(docker.InspectContainerOptions{ID: id})
 		if err == nil {
-			c.logger.Debugf("Found ofelia container with ID: %s", id)
+			c.logger.Debug("Found ofelia container", "container_id", id)
 			return
 		}
 

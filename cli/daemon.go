@@ -44,14 +44,14 @@ func (c *DaemonCommand) boot() (err error) {
 		if !c.DockerLabelConfig {
 			return fmt.Errorf("can't read the config file: %w", err)
 		} else {
-			c.Logger.Debugf("Config file %v not found. Proceeding to read docker labels...", c.ConfigFile)
+			c.Logger.Debug("Config file not found. Proceeding to read docker labels...", "config", c.ConfigFile)
 		}
 	} else {
-		msg := "Found config file %v"
+		msg := "Found config file"
 		if c.DockerLabelConfig {
 			msg += ". Proceeding to read docker labels as well..."
 		}
-		c.Logger.Debugf(msg, c.ConfigFile)
+		c.Logger.Debug(msg, "config", c.ConfigFile)
 	}
 
 	scheduler := core.NewScheduler(c.Logger)
@@ -91,9 +91,7 @@ func (c *DaemonCommand) setSignals() {
 
 	go func() {
 		sig := <-c.signals
-		c.Logger.Warningf(
-			"Signal received: %s, shutting down the process\n", sig,
-		)
+		c.Logger.Warning("Shutting down the process", "signal", sig.String())
 
 		c.done <- true
 	}()
@@ -105,6 +103,6 @@ func (c *DaemonCommand) shutdown() error {
 		return nil
 	}
 
-	c.Logger.Warningf("Waiting running jobs.")
+	c.Logger.Warning("Waiting for running jobs.")
 	return c.scheduler.Stop()
 }

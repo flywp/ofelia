@@ -12,14 +12,14 @@ type ValidateCommand struct {
 
 // Execute runs the validation command
 func (c *ValidateCommand) Execute(args []string) error {
-	c.Logger.Debugf("Validating %q ... ", c.ConfigFile)
+	c.Logger.Debug("Validating config... ", "config", c.ConfigFile)
 	config, err := BuildFromFile(c.ConfigFile, c.Logger)
 	if err != nil {
-		c.Logger.Errorf("ERROR")
+		c.Logger.Error("Failed to validate config", "config", c.ConfigFile, "error", err)
 		return err
 	}
 
-	c.Logger.Noticef("OK. Found %d jobs.", config.JobsCount())
+	c.Logger.Info("OK", "jobs_count", config.JobsCount())
 
 	return nil
 }

@@ -7,20 +7,13 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/mcuadros/ofelia/cli"
 	"github.com/mcuadros/ofelia/core"
-	"github.com/op/go-logging"
 )
 
 var version string
 var build string
 
-const logFormat = "%{time} %{color} %{shortfile} ▶ %{level} %{color:reset} %{message}"
-
 func buildLogger() core.Logger {
-	stdout := logging.NewLogBackend(os.Stdout, "", 0)
-	// Set the backends to be used.
-	logging.SetBackend(stdout)
-	logging.SetFormatter(logging.MustStringFormatter(logFormat))
-	return logging.MustGetLogger("ofelia")
+	return core.NewSlogLogger(os.Stdout)
 }
 
 func main() {
