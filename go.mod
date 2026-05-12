@@ -2,7 +2,7 @@ module github.com/mcuadros/ofelia
 
 go 1.25.0
 
-toolchain go1.26.1
+toolchain go1.26.2
 
 require (
 	github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2
@@ -14,7 +14,7 @@ require (
 	github.com/gohugoio/hashstructure v0.6.0
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/lmittmann/tint v1.1.3
-	github.com/magefile/mage v1.16.1
+	github.com/magefile/mage v1.17.1
 	github.com/mcuadros/go-defaults v1.2.0
 	github.com/robfig/cron/v3 v3.0.1
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
