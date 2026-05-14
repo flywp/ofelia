@@ -33,6 +33,7 @@ type RunJob struct {
 	Network     string
 	Hostname    string
 	Container   string
+	Entrypoint  *string
 	Volume      []string
 	VolumesFrom []string `gcfg:"volumes-from" mapstructure:"volumes-from,"`
 	Environment []string
@@ -173,12 +174,15 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 		Env:          j.Environment,
 		Hostname:     j.Hostname,
 	}
-	
+
 	// Only set User if it's explicitly specified, otherwise use container's default user
 	if j.User != "" {
 		config.User = j.User
 	}
 
+	if j.Entrypoint != nil {
+		config.Entrypoint = args.GetArgs(*j.Entrypoint)
+	}
 	c, err := j.Client.CreateContainer(docker.CreateContainerOptions{
 		Config:           config,
 		NetworkingConfig: &docker.NetworkingConfig{},
