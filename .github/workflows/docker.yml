@@ -31,16 +31,15 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            ${{ env.DOCKER_ORG_USERNAME }}/ofelia
+            ${{ vars.DOCKER_ORG_USERNAME }}/ofelia
           # ghcr.io/${{ github.repository }}
           flavor: |
-            latest=false
+            latest=auto
           tags: |
-            type=raw,value=development,enable=${{ github.event_name != 'release' }}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
+            type=raw,value=development,enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,enable=true,priority=100,prefix=,suffix=,format=short
+            type=sha,prefix=
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
