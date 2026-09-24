@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/mcuadros/ofelia/core"
@@ -68,13 +69,13 @@ func (c *Config) InitializeApp() error {
 		return fmt.Errorf("scheduler is not initialized yet")
 	}
 
-	if c.dockerHandler.ConfigFromLabelsEnabled() {
+	if c.dockerHandler != nil && c.dockerHandler.ConfigFromLabelsEnabled() {
 		// Wait couple seconds for docker to propagate container labels
 		c.dockerHandler.WaitForLabels()
 
 		// In order to support non dynamic job types such as Local or Run using labels
 		// lets parse the labels and merge the job lists
-		dockerLabels, err := c.dockerHandler.GetDockerLabels()
+		dockerLabels, err := c.dockerHandler.GetDockerLabels(context.Background())
 		if err != nil {
 			return err
 		}
@@ -87,7 +88,18 @@ func (c *Config) InitializeApp() error {
 		c.buildSchedulerMiddlewares(c.sh)
 	}
 
+	for name, j := range c.LocalJobs {
+		defaults.SetDefaults(j)
+		j.Name = name
+		j.buildMiddlewares()
+		c.sh.AddJob(j)
+	}
+
 	for name, j := range c.ExecJobs {
+		if c.dockerHandler == nil {
+			c.logger.Warning("'job-exec' requires docker to be enabled, skipping job", "job", name)
+			continue
+		}
 		defaults.SetDefaults(j)
 		j.Client = c.dockerHandler.GetInternalDockerClient()
 		j.Name = name
@@ -96,6 +108,10 @@ func (c *Config) InitializeApp() error {
 	}
 
 	for name, j := range c.RunJobs {
+		if c.dockerHandler == nil {
+			c.logger.Warning("'job-run' requires docker to be enabled, skipping job", "job", name)
+			continue
+		}
 		defaults.SetDefaults(j)
 		j.Client = c.dockerHandler.GetInternalDockerClient()
 		j.Name = name
@@ -103,14 +119,11 @@ func (c *Config) InitializeApp() error {
 		c.sh.AddJob(j)
 	}
 
-	for name, j := range c.LocalJobs {
-		defaults.SetDefaults(j)
-		j.Name = name
-		j.buildMiddlewares()
-		c.sh.AddJob(j)
-	}
-
 	for name, j := range c.ServiceJobs {
+		if c.dockerHandler == nil {
+			c.logger.Warning("'job-service-run' requires docker to be enabled, skipping job", "job", name)
+			continue
+		}
 		defaults.SetDefaults(j)
 		j.Name = name
 		j.Client = c.dockerHandler.GetInternalDockerClient()
@@ -123,6 +136,10 @@ func (c *Config) InitializeApp() error {
 
 func (c *Config) JobsCount() int {
 	return len(c.ExecJobs) + len(c.RunJobs) + len(c.LocalJobs) + len(c.ServiceJobs)
+}
+
+func (c *Config) RequiresDocker() bool {
+	return len(c.ExecJobs) > 0 || len(c.RunJobs) > 0 || len(c.ServiceJobs) > 0
 }
 
 func (c *Config) buildSchedulerMiddlewares(sh *core.Scheduler) {

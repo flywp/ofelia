@@ -12,9 +12,10 @@ import (
 // DaemonCommand daemon process
 type DaemonCommand struct {
 	ConfigFile        string   `long:"config" description:"configuration file" default:"/etc/ofelia.conf"`
-	DockerLabelConfig bool     `short:"d" long:"docker" description:"continiously poll docker labels for configurations"`
+	DockerLabelConfig bool     `short:"d" long:"docker" description:"listen for docker events and reload job configurations from container labels"`
 	DockerFilters     []string `short:"f" long:"docker-filter" description:"filter to select docker containers. https://docs.docker.com/reference/cli/docker/container/ls/#filter"`
 	scheduler         *core.Scheduler
+	dockerHandler     *DockerHandler
 	signals           chan os.Signal
 	done              chan bool
 	Logger            core.Logger
@@ -61,7 +62,12 @@ func (c *DaemonCommand) boot() (err error) {
 
 	config.dockerHandler, err = NewDockerHandler(config, c.DockerFilters, c.DockerLabelConfig, c.Logger)
 	if err != nil {
-		return fmt.Errorf("failed to create docker handler: %w", err)
+		if config.RequiresDocker() || c.DockerLabelConfig {
+			return fmt.Errorf("failed to create docker handler: %w", err)
+		}
+		c.Logger.Warning("failed to create docker handler. Proceeding in 'job-local' only mode.", "error", err)
+	} else {
+		c.dockerHandler = config.dockerHandler
 	}
 
 	err = config.InitializeApp()
@@ -69,6 +75,9 @@ func (c *DaemonCommand) boot() (err error) {
 		return fmt.Errorf("can't start the app: %w", err)
 	}
 
+	if config.dockerHandler != nil {
+		config.dockerHandler.StartWatching()
+	}
 	c.scheduler = config.sh
 
 	return err
@@ -99,10 +108,13 @@ func (c *DaemonCommand) setSignals() {
 
 func (c *DaemonCommand) shutdown() error {
 	<-c.done
+	if c.dockerHandler != nil {
+		c.dockerHandler.Close()
+	}
 	if !c.scheduler.IsRunning() {
 		return nil
 	}
 
-	c.Logger.Warning("Waiting for running jobs.")
+	c.Logger.Warning("Waiting for running jobs")
 	return c.scheduler.Stop()
 }
