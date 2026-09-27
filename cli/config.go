@@ -7,6 +7,7 @@ import (
 	"github.com/mcuadros/ofelia/core"
 	"github.com/mcuadros/ofelia/middlewares"
 
+	"github.com/gohugoio/hashstructure"
 	defaults "github.com/mcuadros/go-defaults"
 	gcfg "gopkg.in/gcfg.v1"
 )
@@ -266,6 +267,13 @@ type ExecJobConfig struct {
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
 
+// Hash covers the job and its middleware settings, so a label change to
+// either of them (e.g. user or no-overlap) replaces the scheduled job.
+func (c *ExecJobConfig) Hash() uint64 {
+	hash, _ := hashstructure.Hash(c, nil)
+	return hash
+}
+
 func (c *ExecJobConfig) buildMiddlewares() {
 	c.ExecJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
 	c.ExecJob.Use(middlewares.NewSlack(&c.SlackConfig))
@@ -290,6 +298,13 @@ type RunJobConfig struct {
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
 
+// Hash covers the job and its middleware settings, so a label change to
+// either of them (e.g. user or no-overlap) replaces the scheduled job.
+func (c *RunJobConfig) Hash() uint64 {
+	hash, _ := hashstructure.Hash(c, nil)
+	return hash
+}
+
 func (c *RunJobConfig) buildMiddlewares() {
 	c.RunJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
 	c.RunJob.Use(middlewares.NewSlack(&c.SlackConfig))
@@ -306,11 +321,25 @@ type LocalJobConfig struct {
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
 
+// Hash covers the job and its middleware settings, so a label change to
+// either of them (e.g. user or no-overlap) replaces the scheduled job.
+func (c *LocalJobConfig) Hash() uint64 {
+	hash, _ := hashstructure.Hash(c, nil)
+	return hash
+}
+
 func (c *LocalJobConfig) buildMiddlewares() {
 	c.LocalJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
 	c.LocalJob.Use(middlewares.NewSlack(&c.SlackConfig))
 	c.LocalJob.Use(middlewares.NewSave(&c.SaveConfig))
 	c.LocalJob.Use(middlewares.NewMail(&c.MailConfig))
+}
+
+// Hash covers the job and its middleware settings, so a label change to
+// either of them (e.g. user or no-overlap) replaces the scheduled job.
+func (c *RunServiceConfig) Hash() uint64 {
+	hash, _ := hashstructure.Hash(c, nil)
+	return hash
 }
 
 func (c *RunServiceConfig) buildMiddlewares() {

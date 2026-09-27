@@ -44,3 +44,9 @@ func (j *LocalJob) buildCommand(ctx *Context) (*exec.Cmd, error) {
 		Dir: j.Dir,
 	}, nil
 }
+
+// Hash overrides the promoted BareJob.Hash, which only covers the BareJob
+// fields, so changes to Dir and Environment are detected too.
+func (j *LocalJob) Hash() uint64 {
+	return hashJob(j)
+}
