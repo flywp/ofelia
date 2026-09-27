@@ -16,7 +16,7 @@ import (
 
 type RunJob struct {
 	BareJob `mapstructure:",squash"`
-	Client  DockerClient `json:"-"`
+	Client  DockerClient `json:"-" hash:"-"`
 	User    string       `default:""`
 
 	TTY bool `default:"false"`
@@ -263,4 +263,10 @@ func (j *RunJob) deleteContainer(ctx *Context) error {
 
 	_, err := j.Client.ContainerRemove(ctx.Context(), j.containerID, client.ContainerRemoveOptions{})
 	return err
+}
+
+// Hash overrides the promoted BareJob.Hash, which only covers the BareJob
+// fields, so changes to Image, User, Volume, etc. are detected too.
+func (j *RunJob) Hash() uint64 {
+	return hashJob(j)
 }
