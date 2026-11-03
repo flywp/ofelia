@@ -1,0 +1,54 @@
+name: Upstream Sync
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    # Only run on the fork, never on mcuadros/ofelia itself.
+    if: github.repository != 'mcuadros/ofelia'
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      UPSTREAM: https://github.com/mcuadros/ofelia.git
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge upstream master
+        id: merge
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch "$UPSTREAM" master:upstream-master
+          if git merge-base --is-ancestor upstream-master HEAD; then
+            echo "Already in sync with upstream."
+            exit 0
+          fi
+          branch="merge/upstream-$(git rev-parse --short upstream-master)"
+          git checkout -b "$branch"
+          if ! git merge --no-ff --no-edit -m "Merge upstream mcuadros/ofelia master" upstream-master; then
+            git merge --abort
+            echo "::error::Upstream merge has conflicts; sync manually."
+            exit 1
+          fi
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request
+        if: steps.merge.outputs.branch != ''
+        run: |
+          branch='${{ steps.merge.outputs.branch }}'
+          if gh pr view "$branch" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            echo "PR for $branch already open."
+            exit 0
+          fi
+          git push origin "$branch"
+          gh pr create --base master --head "$branch" \
+            --title "Merge upstream mcuadros/ofelia master" \
+            --body "Automated sync with upstream. Commits: $(git log --oneline HEAD^1..upstream-master | wc -l)"
