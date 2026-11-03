@@ -14,7 +14,7 @@ import (
 
 type RunServiceJob struct {
 	BareJob `mapstructure:",squash"`
-	Client  DockerClient `json:"-"`
+	Client  DockerClient `json:"-" hash:"-"`
 	User    string       `default:""`
 	TTY     bool         `default:"false"`
 	// do not use bool values with "default:true" because if
@@ -194,4 +194,10 @@ func (j *RunServiceJob) deleteService(ctx *Context, svcID string) error {
 	}
 
 	return err
+}
+
+// Hash overrides the promoted BareJob.Hash, which only covers the BareJob
+// fields, so changes to Image, User, Network, etc. are detected too.
+func (j *RunServiceJob) Hash() uint64 {
+	return hashJob(j)
 }

@@ -98,3 +98,9 @@ func (j *ExecJob) inspectExec(ctx *Context) (client.ExecInspectResult, error) {
 
 	return i, nil
 }
+
+// Hash overrides the promoted BareJob.Hash, which only covers the BareJob
+// fields, so changes to Container, User, TTY, etc. are detected too.
+func (j *ExecJob) Hash() uint64 {
+	return hashJob(j)
+}

@@ -54,6 +54,10 @@ func (j *BareJob) NotifyStop() {
 // Returns a hash of all the job attributes. Used to detect changes
 // unexported struct fields are ignored - https://pkg.go.dev/github.com/gohugoio/hashstructure#Hash
 func (j *BareJob) Hash() uint64 {
+	return hashJob(j)
+}
+
+func hashJob(j any) uint64 {
 	hash, _ := hashstructure.Hash(j, nil)
 	return hash
 }

@@ -363,7 +363,7 @@ func (s *TestDockerSuit) TestConsumeEventsTriggersLabelUpdate(c *check.C) {
 			{
 				Names: []string{"/myapp"},
 				Labels: map[string]string{
-					requiredLabel:                                  "true",
+					requiredLabel: "true",
 					labelPrefix + "." + jobExec + ".job1.schedule": "* * * * *",
 					labelPrefix + "." + jobExec + ".job1.command":  "echo hello",
 				},
@@ -417,7 +417,7 @@ func (s *TestDockerSuit) TestConsumeEventsDebounces(c *check.C) {
 			{
 				Names: []string{"/myapp"},
 				Labels: map[string]string{
-					requiredLabel:                                  "true",
+					requiredLabel: "true",
 					labelPrefix + "." + jobExec + ".job1.schedule": "* * * * *",
 					labelPrefix + "." + jobExec + ".job1.command":  "echo hello",
 				},
@@ -611,4 +611,62 @@ func withDockerEnv(envs map[string]string) func() {
 			}
 		}
 	}
+}
+
+func (s *TestDockerSuit) TestDockerLabelsUpdateDetectsJobChanges(c *check.C) {
+	execPrefix := labelPrefix + "." + jobExec + ".wpcron."
+	runPrefix := labelPrefix + "." + jobRun + ".backup."
+	labels := func(extra map[string]string) map[string]string {
+		l := map[string]string{
+			requiredLabel:              "true",
+			serviceLabel:               "true",
+			execPrefix + "schedule":    "@every 10m",
+			execPrefix + "command":     "wp cron event run --due-now",
+			runPrefix + "schedule":     "@hourly",
+			runPrefix + "image":        "alpine",
+			runPrefix + "command":      "true",
+			execPrefix + "environment": `["A=1","B=2","C=3"]`,
+			runPrefix + "volume":       `["/a:/a","/b:/b","/c:/c"]`,
+		}
+		for k, v := range extra {
+			l[k] = v
+		}
+		return l
+	}
+	update := func(conf *Config, extra map[string]string) {
+		conf.dockerLabelsUpdate(map[string]map[string]string{"site-php-1": labels(extra)})
+	}
+
+	mock := &mockCLIDockerClient{
+		containers: []container.Summary{
+			{Names: []string{"/site-php-1"}, Labels: labels(map[string]string{execPrefix + "user": "www-data"})},
+		},
+	}
+	mockLogger := &TestLogger{}
+	conf := NewConfig(mockLogger)
+	conf.sh = core.NewScheduler(mockLogger)
+	conf.dockerHandler = newTestDockerHandler(mock, nil)
+	c.Assert(conf.InitializeApp(), check.IsNil)
+
+	execJob, runJob := conf.ExecJobs["wpcron"], conf.RunJobs["backup"]
+	c.Assert(execJob.User, check.Equals, "www-data")
+	c.Assert(execJob.Hash(), check.Not(check.Equals), uint64(0))
+	c.Assert(runJob.Hash(), check.Not(check.Equals), uint64(0))
+
+	// Unchanged labels must keep the scheduled jobs untouched
+	for i := 0; i < 20; i++ {
+		update(conf, map[string]string{execPrefix + "user": "www-data"})
+		c.Assert(conf.ExecJobs["wpcron"], check.Equals, execJob)
+		c.Assert(conf.RunJobs["backup"], check.Equals, runJob)
+	}
+
+	// Removing the user label must switch the job to the container's user
+	update(conf, nil)
+	c.Assert(conf.ExecJobs["wpcron"].User, check.Equals, "")
+	c.Assert(conf.RunJobs["backup"], check.Equals, runJob)
+
+	// Middleware labels are part of the job config as well
+	update(conf, map[string]string{execPrefix + "no-overlap": "true", runPrefix + "user": "nobody"})
+	c.Assert(conf.ExecJobs["wpcron"].NoOverlap, check.Equals, true)
+	c.Assert(conf.RunJobs["backup"].User, check.Equals, "nobody")
 }
