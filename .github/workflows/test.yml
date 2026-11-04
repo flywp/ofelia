@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         go-version: ['stable']
-        platform: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+        platform: [ubuntu-24.04, ubuntu-24.04-arm, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
 
@@ -39,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         go-version: ['stable']
-        platform: [ubuntu-latest, ubuntu-24.04-arm]
+        platform: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.platform }}
     steps:
 
